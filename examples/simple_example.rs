@@ -1,7 +1,4 @@
 fn main() {
-    if ().eq(&()) {
-        dbg!("eq");
-    }
     let mut a = TestStruct {
         v0: 20,
         v1: -3.0,
@@ -9,16 +6,14 @@ fn main() {
         ..Default::default()
     };
     
-    dbg!(a.check_with_fallback());
+    let _ = dbg!(a.check_with_fallback());
 
     dbg!(&a);
 
-    dbg!(a.check());
-
+    let _ = dbg!(a.check());
 }
 
 use range_checker::*;
-use std::ops::{RangeBounds, Bound, Range};
 
 #[derive(Debug, Default, RangeChecker)]
 struct TestStruct {

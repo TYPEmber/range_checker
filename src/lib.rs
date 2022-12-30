@@ -77,7 +77,7 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
         }
     }
 
-    dbg!(&fallback_list);
+    // dbg!(&fallback_list);
 
     quote!(
         impl #ident {
