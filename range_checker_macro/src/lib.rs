@@ -2,7 +2,9 @@ use std::ops::{Bound, RangeBounds};
 
 use proc_macro::{Span, TokenStream};
 use quote::{__private::Literal, quote};
-use syn::{parse_macro_input, DeriveInput, Lit, Meta, MetaNameValue};
+use syn::{
+    parse::Parse, parse_macro_input, Attribute, DeriveInput, Ident, Lit, Meta, MetaNameValue,
+};
 
 #[proc_macro_derive(RangeChecker, attributes(range, fallback))]
 pub fn derive_range_checker(input: TokenStream) -> TokenStream {
@@ -13,58 +15,23 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
     let mut check_list = vec![];
     let mut ident_list = vec![];
     let mut fallback_list = vec![];
-    let mut ty_list = vec![];
 
     if let syn::Data::Struct(syn::DataStruct { fields, .. }) = input.data {
         for field in fields {
             let ident_item = &field.ident.unwrap();
             let attrs = &field.attrs;
 
-            let mut range_attrs = attrs
-                .iter()
-                .map(|attr| (attr, attr.path.get_ident()))
-                .filter(|(_, meta)| meta.is_some())
-                .map(|(attr, ident)| (attr, ident.unwrap()))
-                .filter(|(_, ident)| *ident == "range")
-                .map(|(attr, _)| attr.parse_args::<syn::ExprRange>())
-                .filter_map(|attr| attr.ok());
-
-            let mut fallback = attrs
-                .iter()
-                .map(|attr| (attr, attr.path.get_ident()))
-                .filter(|(_, meta)| meta.is_some())
-                .map(|(attr, ident)| (attr, ident.unwrap()))
-                .filter(|(_, ident)| *ident == "fallback")
-                .map(|(attr, _)| attr.parse_args::<syn::Lit>().unwrap())
-                // .map(|lit| lit)
-                .collect::<Vec<_>>();
-
-            // if (..5).start_bound() != Bound::Unbounded {}
-
-            // if let Bound::Included(start) = (..5).start_bound() {
-
-            // } else if let Bound::Included(end) = (..5).end_bound() {
-
-            // }     
+            let mut range_attrs = extract_attributes::<syn::ExprRange>(attrs.iter(), "range");
+            let mut fallback =
+                extract_attributes::<syn::Lit>(attrs.iter(), "fallback").collect::<Vec<_>>();
 
             if let Some(range_first) = range_attrs.next() {
                 let mut check_statement = quote! {(#range_first).contains(&self.#ident_item)};
 
-                let ty = field.ty.clone();
                 let fallback = fallback
                     .pop()
-                    .map(|lit| quote! {Some(#lit)})
-                    // .unwrap_or(quote! {(#range_first).next().unwrap()});
-                    .unwrap_or(quote! {
-                        // if (#range_first).contains(&<(#ty) as Default>::default()) {
-                        //     <(#ty) as Default>::default()
-                        // } else {
-                        //     <(#ty) as Default>::default() 
-                        // }
-
-                        // <(#ty) as Default>::default()
-                        None
-                    });
+                    .map(|lit| quote! { Some(#lit) })
+                    .unwrap_or(quote! { None });
 
                 for range in range_attrs {
                     check_statement.extend(quote! {|| (#range).contains(&self.#ident_item)})
@@ -73,12 +40,11 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
                 check_list.push(check_statement);
                 ident_list.push(ident_item.clone());
                 fallback_list.push(fallback);
-                ty_list.push(field.ty);
             };
         }
     }
 
-    dbg!(&fallback_list);
+    // dbg!(&fallback_list);
 
     quote!(
         impl #ident {
@@ -123,7 +89,7 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
                             stringify!(self.#ident_list),
                             self.#ident_list
                         );
-                
+
                         if let Some(fallback) = #fallback_list {
                             self.#ident_list = fallback;
                             fallback_str.push(format!("{} {}", ret_str, "=> fallback success!"));
@@ -143,4 +109,20 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
         }
     )
     .into()
+}
+
+fn extract_attributes<'a, T>(
+    attrs: impl Iterator<Item = &'a Attribute> + 'a,
+    id_str: &'a str,
+) -> impl Iterator<Item = T> + 'a
+where
+    T: Parse,
+{
+    attrs
+        .map(|attr| (attr, attr.path.get_ident()))
+        .filter(|(_, meta)| meta.is_some())
+        .map(|(attr, ident)| (attr, ident.unwrap()))
+        .filter(|(_, ident)| (*ident).eq(id_str))
+        .map(|(attr, _)| attr.parse_args::<T>())
+        .filter_map(|attr| attr.ok())
 }
