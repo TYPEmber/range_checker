@@ -22,14 +22,13 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
             let attrs = &field.attrs;
 
             let mut range_attrs = extract_attributes::<syn::ExprRange>(attrs.iter(), "range");
-            let mut fallback =
-                extract_attributes::<syn::Lit>(attrs.iter(), "fallback").collect::<Vec<_>>();
+            let mut fallback = extract_attributes::<syn::Lit>(attrs.iter(), "fallback");
 
             if let Some(range_first) = range_attrs.next() {
                 let mut check_statement = quote! {(#range_first).contains(&self.#ident_item)};
 
                 let fallback = fallback
-                    .pop()
+                    .next()
                     .map(|lit| quote! { Some(#lit) })
                     .unwrap_or(quote! { None });
 
