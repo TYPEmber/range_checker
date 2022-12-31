@@ -1,10 +1,9 @@
 [package]
-name = "range_checker"
+name = "range_checker_error"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-range_checker_macro = {path = "./range_checker_macro"}
-range_checker_error = {path = "./range_checker_error"}
+thiserror = "1"

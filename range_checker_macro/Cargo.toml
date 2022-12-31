@@ -1,0 +1,15 @@
+[package]
+name = "range_checker_macro"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1"
+syn = { version = "1", features = ["full"] }
+
+range_checker_error = {path = "../range_checker_error"}
