@@ -19,11 +19,14 @@ use range_checker::*;
 struct TestStruct {
     #[range(..=5)]
     #[range(20..)]
-    #[fallback(255u8)]
+    #[filter(|x| x % 2 != 0)]
+    #[fallback(255)]
     pub v0: u8,
     #[range(-1.0..=5.0)]
     #[fallback(3.1)]
     v1: f32,
+    #[filter(|x| x > 8.0)]
+    #[fallback(9.9)]
     v2: f64,
     #[range(..5)]
     v3: isize,
