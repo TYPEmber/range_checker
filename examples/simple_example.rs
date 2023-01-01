@@ -5,7 +5,7 @@ fn main() {
         v3: 0,
         ..Default::default()
     };
-    
+
     let _ = dbg!(a.check_with_fallback());
 
     dbg!(&a);
@@ -14,6 +14,7 @@ fn main() {
 }
 
 use range_checker::*;
+// use range_checker_error::Error;
 
 #[derive(Debug, Default, RangeChecker)]
 struct TestStruct {

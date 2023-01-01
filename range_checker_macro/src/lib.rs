@@ -6,6 +6,8 @@ use syn::{
     parse::Parse, parse_macro_input, Attribute, DeriveInput, Ident, Lit, Meta, MetaNameValue,
 };
 
+use range_checker_error::Error;
+
 #[proc_macro_derive(RangeChecker, attributes(range, filter, fallback))]
 pub fn derive_range_checker(input: TokenStream) -> TokenStream {
     let input: DeriveInput = parse_macro_input!(input);
@@ -61,62 +63,71 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
 
     quote!(
         impl #ident {
-            fn check(&self) -> Result<(), Vec<String>> {
+            fn check(&self) -> Result<(), Vec<Error>> {
                 // dbg!(#(#check_list),*);
 
-                let mut err_str = vec![];
+                let mut err_vec = vec![];
 
                 #(
                     if !(#check_list) {
-                        err_str.push(format!(
-                            "{} == false, {} = {}",
-                            stringify!(#check_list),
-                            stringify!(self.#ident_list),
-                            self.#ident_list
-                        ));
+                        err_vec.push(
+                            Error::CheckFailed {
+                                ident: stringify!(#ident_list).to_owned(),
+                                value: (self.#ident_list).to_string(),
+                                check_statement: stringify!(#check_list).to_owned(),
+                            }
+                        )
                     }
                 )*
 
-                if err_str.is_empty() {
+                if err_vec.is_empty() {
                     Ok(())
                 }else {
-                    Err(err_str)
+                    Err(err_vec)
                 }
             }
 
-            fn check_with_fallback(&mut self) -> Result<Vec<String>, Vec<String>> {
+            fn check_with_fallback(&mut self) -> Result<Vec<Error>, Vec<Error>> {
                 // dbg!(#(#check_list),*);
                 // dbg!(#(#fallback_list)*);
                 // dbg!(#(#ident_list)*);
 
-                let mut err_str = vec![];
-                let mut fallback_str = vec![];
+                let mut failed_vec = vec![];
+                let mut fallback_vec = vec![];
 
                 #(
                     if !(#check_list) {
                         // dbg!(#fallback_list);
 
-                        let ret_str = format!(
-                            "{} == false, {} = {}",
-                            stringify!(#check_list),
-                            stringify!(self.#ident_list),
-                            self.#ident_list
-                        );
-
                         if let Some(fallback) = #fallback_list {
+                            let buf = self.#ident_list;
                             self.#ident_list = fallback;
-                            fallback_str.push(format!("{} {}", ret_str, "=> fallback success!"));
+
+                            fallback_vec.push(
+                                Error::Fallback {
+                                    ident: stringify!(#ident_list).to_owned(),
+                                    value: buf.to_string(),
+                                    check_statement: stringify!(#check_list).to_owned(),
+                                    fallback: fallback.to_string(),
+                                }
+                            );
                         } else {
-                            err_str.push(ret_str);
+                            failed_vec.push(
+                                Error::CheckFailed {
+                                    ident: stringify!(#ident_list).to_owned(),
+                                    value: (self.#ident_list).to_string(),
+                                    check_statement: stringify!(#check_list).to_owned(),
+                                }
+                            );
                         }
                     }
                 )*
 
-                if err_str.is_empty() {
-                    Ok(fallback_str)
+                if failed_vec.is_empty() {
+                    Ok(fallback_vec)
                 }else {
-                    err_str.extend(fallback_str);
-                    Err(err_str)
+                    failed_vec.extend(fallback_vec);
+                    Err(failed_vec)
                 }
             }
         }
