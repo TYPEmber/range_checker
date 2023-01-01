@@ -2,7 +2,7 @@ fn main() {
     let mut a = TestStruct {
         v0: 20,
         v1: -3.0,
-        v3: 0,
+        v3: 1,
         ..Default::default()
     };
 
@@ -29,6 +29,7 @@ struct TestStruct {
     #[filter(|x| x > 8.0)]
     #[fallback(9.9)]
     v2: f64,
-    #[range(..5)]
+    #[range(..-1)]
+    #[fallback(|x| x * 5)]
     v3: isize,
 }

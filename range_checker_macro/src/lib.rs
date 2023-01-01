@@ -17,6 +17,7 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
     let mut check_list = vec![];
     let mut ident_list = vec![];
     let mut fallback_list = vec![];
+    let mut type_list = vec![];
 
     if let syn::Data::Struct(syn::DataStruct { fields, .. }) = input.data {
         for field in fields {
@@ -25,11 +26,26 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
             let mut range_attrs = extract_attributes::<syn::ExprRange>(field.attrs.iter(), "range");
             let mut filters = extract_attributes::<syn::ExprClosure>(field.attrs.iter(), "filter");
             let mut fallback = extract_attributes::<syn::Lit>(field.attrs.iter(), "fallback");
+            let mut fallback_closure =
+                extract_attributes::<syn::ExprClosure>(field.attrs.iter(), "fallback");
 
-            let fallback = fallback
+            // assert!(fallback.count() + fallback_closure.count() <= 1);
+
+            let ty = field.ty.clone();
+            let a = None as Option<i32>;
+            let b = Some(|x: i32| x);
+
+            // let c = Option::<dyn FnOnce(i32) -> i32>::None;
+
+            let fallback_closure = fallback_closure
                 .next()
-                .map(|lit| quote! { Some(#lit) })
-                .unwrap_or(quote! { None });
+                .map(|closure| quote! { Some(#closure) })
+                .unwrap_or(
+                    fallback
+                        .next()
+                        .map(|lit| quote! { Some(|x| #lit ) })
+                        .unwrap_or(quote! { Option::<fn(#ty) -> #ty>::None }),
+                );
 
             let mut check_statement = TokenStream::default().into();
 
@@ -54,7 +70,8 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
             if !check_statement.is_empty() {
                 check_list.push(check_statement);
                 ident_list.push(ident_item.clone());
-                fallback_list.push(fallback);
+                fallback_list.push(fallback_closure);
+                type_list.push(ty);
             }
         }
     }
@@ -99,8 +116,9 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
                     if !(#check_list) {
                         // dbg!(#fallback_list);
 
-                        if let Some(fallback) = #fallback_list {
+                        if let Some(fallback_closure) = #fallback_list {
                             let buf = self.#ident_list;
+                            let fallback = fallback_closure(buf);
                             self.#ident_list = fallback;
 
                             fallback_vec.push(
