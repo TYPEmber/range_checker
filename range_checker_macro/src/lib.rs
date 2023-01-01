@@ -32,11 +32,6 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
             // assert!(fallback.count() + fallback_closure.count() <= 1);
 
             let ty = field.ty.clone();
-            let a = None as Option<i32>;
-            let b = Some(|x: i32| x);
-
-            // let c = Option::<dyn FnOnce(i32) -> i32>::None;
-
             let fallback_closure = fallback_closure
                 .next()
                 .map(|closure| quote! { Some(#closure) })
@@ -117,18 +112,18 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
                         // dbg!(#fallback_list);
 
                         if let Some(fallback_closure) = #fallback_list {
-                            let buf = self.#ident_list;
-                            let fallback = fallback_closure(buf);
-                            self.#ident_list = fallback;
+                            let fallback = fallback_closure(self.#ident_list);
 
                             fallback_vec.push(
                                 Error::Fallback {
                                     ident: stringify!(#ident_list).to_owned(),
-                                    value: buf.to_string(),
+                                    value: (self.#ident_list).to_string(),
                                     check_statement: stringify!(#check_list).to_owned(),
                                     fallback: fallback.to_string(),
                                 }
                             );
+
+                            self.#ident_list = fallback;
                         } else {
                             failed_vec.push(
                                 Error::CheckFailed {
