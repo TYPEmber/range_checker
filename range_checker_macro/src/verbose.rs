@@ -8,14 +8,6 @@ use syn::{
 
 use range_checker_error::Error;
 
-mod verbose;
-
-#[proc_macro_derive(RangeCheckerVerbose, attributes(range, filter, fallback))]
-pub fn derive_range_checker_verbose(input: TokenStream) -> TokenStream {
-    verbose::derive_range_checker(input)
-}
-
-#[proc_macro_derive(RangeChecker, attributes(range, filter, fallback))]
 pub fn derive_range_checker(input: TokenStream) -> TokenStream {
     let input: DeriveInput = parse_macro_input!(input);
 
@@ -41,18 +33,13 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
             let ty = field.ty.clone();
             let fallback_closure = fallback_closure
                 .next()
-                .map(|closure| {
-                    Some(quote! {
-                        self.#ident_item = (#closure)(self.#ident_item);
-                        break 'if_block;
-                    })
-                })
-                .unwrap_or(fallback.next().map(|lit| {
-                    quote! {
-                        self.#ident_item = #lit;
-                        break 'if_block;
-                    }
-                }));
+                .map(|closure| quote! { Some(#closure) })
+                .unwrap_or(
+                    fallback
+                        .next()
+                        .map(|lit| quote! { Some(|x| #lit ) })
+                        .unwrap_or(quote! { Option::<fn(#ty) -> #ty>::None }),
+                );
 
             let mut check_statement = TokenStream::default().into();
 
@@ -87,35 +74,73 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
 
     quote!(
         impl #ident {
-            fn check(&self) -> bool {
+            fn check(&self) -> Result<(), Vec<Error>> {
                 // dbg!(#(#check_list),*);
+
+                let mut err_vec = vec![];
 
                 #(
                     if !(#check_list) {
-                        return false;
+                        err_vec.push(
+                            Error::CheckFailed {
+                                ident: stringify!(#ident_list).to_owned(),
+                                value: (self.#ident_list).to_string(),
+                                check_statement: stringify!(#check_list).to_owned(),
+                            }
+                        )
                     }
                 )*
 
-                true
+                if err_vec.is_empty() {
+                    Ok(())
+                }else {
+                    Err(err_vec)
+                }
             }
 
-            #[allow(unreachable_code)]
-            fn check_with_fallback(&mut self) -> bool {
+            fn check_with_fallback(&mut self) -> Result<Vec<Error>, Vec<Error>> {
                 // dbg!(#(#check_list),*);
                 // dbg!(#(#fallback_list)*);
                 // dbg!(#(#ident_list)*);
 
+                let mut failed_vec = vec![];
+                let mut fallback_vec = vec![];
+
                 #(
-                    'if_block: {
-                        if !(#check_list) {
-                            // dbg!(#fallback_list);
-                            #fallback_list
-                            return false;
-                        };
+                    if !(#check_list) {
+                        // dbg!(#fallback_list);
+
+                        if let Some(fallback_closure) = #fallback_list {
+                            let fallback = fallback_closure(self.#ident_list);
+
+                            fallback_vec.push(
+                                Error::Fallback {
+                                    ident: stringify!(#ident_list).to_owned(),
+                                    value: (self.#ident_list).to_string(),
+                                    check_statement: stringify!(#check_list).to_owned(),
+                                    fallback: fallback.to_string(),
+                                }
+                            );
+
+                            self.#ident_list = fallback;
+                        } else {
+                            failed_vec.push(
+                                Error::CheckFailed {
+                                    ident: stringify!(#ident_list).to_owned(),
+                                    value: (self.#ident_list).to_string(),
+                                    check_statement: stringify!(#check_list).to_owned(),
+                                }
+                            );
+                        }
                     }
                 )*
 
-                true
+                if failed_vec.is_empty() {
+                    Ok(fallback_vec)
+                }else {
+                    failed_vec.extend(fallback_vec);
+                    Err(failed_vec)
+                }
             }
         }
     )

@@ -16,7 +16,7 @@ fn main() {
 use range_checker::*;
 // use range_checker_error::Error;
 
-#[derive(Debug, Default, RangeChecker)]
+#[derive(Debug, Default, RangeCheckerVerbose)]
 struct TestStruct {
     #[range(..=5)]
     #[range(20..)]
@@ -30,6 +30,6 @@ struct TestStruct {
     #[fallback(9.9)]
     v2: f64,
     #[range(..-1)]
-    #[fallback(|x| x * 5)]
+    #[fallback(|x| x - 5)]
     v3: isize,
 }
