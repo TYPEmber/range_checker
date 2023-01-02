@@ -22,7 +22,6 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
     let mut check_list = vec![];
     let mut ident_list = vec![];
     let mut fallback_list = vec![];
-    let mut type_list = vec![];
 
     if let syn::Data::Struct(syn::DataStruct { fields, .. }) = input.data {
         for field in fields {
@@ -36,21 +35,21 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
 
             // assert!(fallback.count() + fallback_closure.count() <= 1);
 
-            let ty = field.ty.clone();
             let fallback_closure = fallback_closure
                 .next()
                 .map(|closure| {
                     Some(quote! {
                         self.#ident_item = (#closure)(self.#ident_item);
-                        break 'if_block;
                     })
                 })
                 .unwrap_or(fallback.next().map(|lit| {
                     quote! {
                         self.#ident_item = #lit;
-                        break 'if_block;
                     }
-                }));
+                }))
+                .unwrap_or(quote! {
+                    return Err(());
+                });
 
             let mut check_statement = TokenStream::default().into();
 
@@ -76,7 +75,6 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
                 check_list.push(check_statement);
                 ident_list.push(ident_item.clone());
                 fallback_list.push(fallback_closure);
-                type_list.push(ty);
             }
         }
     }
@@ -104,12 +102,9 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
                 // dbg!(#(#ident_list)*);
 
                 #(
-                    'if_block: {
-                        if !(#check_list) {
-                            // dbg!(#fallback_list);
-                            #fallback_list
-                            return Err(());
-                        };
+                    if !(#check_list) {
+                        // dbg!(#fallback_list);
+                        #fallback_list
                     }
                 )*
 

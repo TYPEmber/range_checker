@@ -14,7 +14,6 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
     let mut check_list = vec![];
     let mut ident_list = vec![];
     let mut fallback_list = vec![];
-    let mut type_list = vec![];
 
     if let syn::Data::Struct(syn::DataStruct { fields, .. }) = input.data {
         for field in fields {
@@ -27,17 +26,6 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
                 extract_attributes::<syn::ExprClosure>(field.attrs.iter(), "fallback");
 
             // assert!(fallback.count() + fallback_closure.count() <= 1);
-
-            let ty = field.ty.clone();
-            let fallback_closure = fallback_closure
-                .next()
-                .map(|closure| quote! { Some(#closure) })
-                .unwrap_or(
-                    fallback
-                        .next()
-                        .map(|lit| quote! { Some(|x| #lit ) })
-                        .unwrap_or(quote! { Option::<fn(#ty) -> #ty>::None }),
-                );
 
             let mut check_statement = TokenStream::default().into();
 
@@ -60,10 +48,47 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
             }
 
             if !check_statement.is_empty() {
+                let fallback_closure = fallback_closure
+                    .next()
+                    .map(|closure| {
+                        Some(quote! {
+                            let fallback = (#closure)(self.#ident_item);
+                        })
+                    })
+                    .unwrap_or(fallback.next().map(|lit| {
+                        quote! {
+                            let fallback = #lit;
+                        }
+                    }))
+                    .map(|mut tokens| {
+                        tokens.extend(quote! {
+                            ret_vec.push(
+                                range_checker::Error::Fallback {
+                                    ident: stringify!(#ident_item).to_owned(),
+                                    value: (self.#ident_item).to_string(),
+                                    check_statement: stringify!(#check_statement).to_owned(),
+                                    fallback: fallback.to_string(),
+                                }
+                            );
+
+                            self.#ident_item = fallback;
+                        });
+                        tokens
+                    })
+                    .unwrap_or(quote! {
+                        failed = true;
+                        ret_vec.push(
+                            range_checker::Error::CheckFailed {
+                                ident: stringify!(#ident_item).to_owned(),
+                                value: (self.#ident_item).to_string(),
+                                check_statement: stringify!(#check_statement).to_owned(),
+                            }
+                        );
+                    });
+
                 check_list.push(check_statement);
                 ident_list.push(ident_item.clone());
                 fallback_list.push(fallback_closure);
-                type_list.push(ty);
             }
         }
     }
@@ -101,43 +126,22 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
                 // dbg!(#(#fallback_list)*);
                 // dbg!(#(#ident_list)*);
 
-                let mut failed_vec = vec![];
-                let mut fallback_vec = vec![];
+                let mut ret_vec = vec![];
+                let mut failed = false;
 
                 #(
                     if !(#check_list) {
                         // dbg!(#fallback_list);
 
-                        if let Some(fallback_closure) = #fallback_list {
-                            let fallback = fallback_closure(self.#ident_list);
-
-                            fallback_vec.push(
-                                range_checker::Error::Fallback {
-                                    ident: stringify!(#ident_list).to_owned(),
-                                    value: (self.#ident_list).to_string(),
-                                    check_statement: stringify!(#check_list).to_owned(),
-                                    fallback: fallback.to_string(),
-                                }
-                            );
-
-                            self.#ident_list = fallback;
-                        } else {
-                            failed_vec.push(
-                                range_checker::Error::CheckFailed {
-                                    ident: stringify!(#ident_list).to_owned(),
-                                    value: (self.#ident_list).to_string(),
-                                    check_statement: stringify!(#check_list).to_owned(),
-                                }
-                            );
-                        }
+                            #fallback_list
+                        
                     }
                 )*
 
-                if failed_vec.is_empty() {
-                    Ok(fallback_vec)
-                }else {
-                    failed_vec.extend(fallback_vec);
-                    Err(failed_vec)
+                if !failed {
+                    Ok(ret_vec)
+                } else {
+                    Err(ret_vec)
                 }
             }
         }
