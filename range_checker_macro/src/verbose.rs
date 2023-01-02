@@ -6,8 +6,6 @@ use syn::{
     parse::Parse, parse_macro_input, Attribute, DeriveInput, Ident, Lit, Meta, MetaNameValue,
 };
 
-use range_checker_error::Error;
-
 pub fn derive_range_checker(input: TokenStream) -> TokenStream {
     let input: DeriveInput = parse_macro_input!(input);
 
@@ -73,8 +71,8 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
     // dbg!(&fallback_list);
 
     quote!(
-        impl #ident {
-            fn check(&self) -> Result<(), Vec<Error>> {
+        impl range_checker::CheckVerbose for #ident {
+            fn check(&self) -> Result<(), Vec<range_checker::Error>> {
                 // dbg!(#(#check_list),*);
 
                 let mut err_vec = vec![];
@@ -82,7 +80,7 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
                 #(
                     if !(#check_list) {
                         err_vec.push(
-                            Error::CheckFailed {
+                            range_checker::Error::CheckFailed {
                                 ident: stringify!(#ident_list).to_owned(),
                                 value: (self.#ident_list).to_string(),
                                 check_statement: stringify!(#check_list).to_owned(),
@@ -98,7 +96,7 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
                 }
             }
 
-            fn check_with_fallback(&mut self) -> Result<Vec<Error>, Vec<Error>> {
+            fn check_with_fallback(&mut self) -> Result<Vec<range_checker::Error>, Vec<range_checker::Error>> {
                 // dbg!(#(#check_list),*);
                 // dbg!(#(#fallback_list)*);
                 // dbg!(#(#ident_list)*);
@@ -114,7 +112,7 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
                             let fallback = fallback_closure(self.#ident_list);
 
                             fallback_vec.push(
-                                Error::Fallback {
+                                range_checker::Error::Fallback {
                                     ident: stringify!(#ident_list).to_owned(),
                                     value: (self.#ident_list).to_string(),
                                     check_statement: stringify!(#check_list).to_owned(),
@@ -125,7 +123,7 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
                             self.#ident_list = fallback;
                         } else {
                             failed_vec.push(
-                                Error::CheckFailed {
+                                range_checker::Error::CheckFailed {
                                     ident: stringify!(#ident_list).to_owned(),
                                     value: (self.#ident_list).to_string(),
                                     check_statement: stringify!(#check_list).to_owned(),

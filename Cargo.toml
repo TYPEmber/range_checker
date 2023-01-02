@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 range_checker_macro = {path = "./range_checker_macro"}
-range_checker_error = {path = "./range_checker_error"}
+range_checker_basic = {path = "./range_checker_basic"}

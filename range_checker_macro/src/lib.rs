@@ -6,16 +6,14 @@ use syn::{
     parse::Parse, parse_macro_input, Attribute, DeriveInput, Ident, Lit, Meta, MetaNameValue,
 };
 
-use range_checker_error::Error;
-
 mod verbose;
 
-#[proc_macro_derive(RangeCheckerVerbose, attributes(range, filter, fallback))]
+#[proc_macro_derive(CheckVerbose, attributes(range, filter, fallback))]
 pub fn derive_range_checker_verbose(input: TokenStream) -> TokenStream {
     verbose::derive_range_checker(input)
 }
 
-#[proc_macro_derive(RangeChecker, attributes(range, filter, fallback))]
+#[proc_macro_derive(Check, attributes(range, filter, fallback))]
 pub fn derive_range_checker(input: TokenStream) -> TokenStream {
     let input: DeriveInput = parse_macro_input!(input);
 
@@ -86,21 +84,21 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
     // dbg!(&fallback_list);
 
     quote!(
-        impl #ident {
-            fn check(&self) -> bool {
+        impl range_checker::Check for #ident {
+            fn check(&self) -> Result<(), ()> {
                 // dbg!(#(#check_list),*);
 
                 #(
                     if !(#check_list) {
-                        return false;
+                        return Err(());
                     }
                 )*
 
-                true
+                Ok(())
             }
 
             #[allow(unreachable_code)]
-            fn check_with_fallback(&mut self) -> bool {
+            fn check_with_fallback(&mut self) -> Result<(), ()> {
                 // dbg!(#(#check_list),*);
                 // dbg!(#(#fallback_list)*);
                 // dbg!(#(#ident_list)*);
@@ -110,12 +108,12 @@ pub fn derive_range_checker(input: TokenStream) -> TokenStream {
                         if !(#check_list) {
                             // dbg!(#fallback_list);
                             #fallback_list
-                            return false;
+                            return Err(());
                         };
                     }
                 )*
 
-                true
+                Ok(())
             }
         }
     )

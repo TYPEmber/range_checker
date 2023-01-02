@@ -6,6 +6,9 @@ fn main() {
         ..Default::default()
     };
 
+    // dbg!(range_checker::Check::check(&a));
+    // dbg!(range_checker::CheckVerbose::check(&a));
+
     let _ = dbg!(a.check_with_fallback());
 
     dbg!(&a);
@@ -13,10 +16,10 @@ fn main() {
     let _ = dbg!(a.check());
 }
 
-use range_checker::*;
-// use range_checker_error::Error;
+use range_checker::Check;
+use range_checker::CheckVerbose;
 
-#[derive(Debug, Default, RangeCheckerVerbose)]
+#[derive(Debug, Default, CheckVerbose)]
 struct TestStruct {
     #[range(..=5)]
     #[range(20..)]

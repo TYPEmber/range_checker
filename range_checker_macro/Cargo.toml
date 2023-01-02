@@ -12,4 +12,4 @@ proc-macro = true
 quote = "1"
 syn = { version = "1", features = ["full"] }
 
-range_checker_error = {path = "../range_checker_error"}
+range_checker_basic = {path = "../range_checker_basic"}

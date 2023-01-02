@@ -16,3 +16,13 @@ pub enum Error {
         fallback: String,
     },
 }
+
+pub trait Check {
+    fn check(&self) -> Result<(), ()>;
+    fn check_with_fallback(&mut self) -> Result<(), ()>;
+}
+
+pub trait CheckVerbose {
+    fn check(&self) -> Result<(), Vec<Error>>;
+    fn check_with_fallback(&mut self) ->  Result<Vec<Error>, Vec<Error>>;
+}
