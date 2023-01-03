@@ -58,7 +58,7 @@ One field brokes it's range or filter with fallback attribute setted, `fn check_
 
 ---
 
-## Check or CheckVervose
+## Check or CheckVerbose
 
 `range_checker::Check` will return `Err(())` immediately any field broke it's range or filter.
 
