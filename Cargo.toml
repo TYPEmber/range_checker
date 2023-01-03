@@ -11,5 +11,6 @@ repository = "https://github.com/TYPEmber/range_checker.git"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+thiserror = "1"
+
 range_checker_macro = {path = "./range_checker_macro", version = "0"}
-range_checker_basic = {path = "./range_checker_basic", version = "0"}
