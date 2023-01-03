@@ -19,7 +19,7 @@ fn main() {
 use range_checker::Check;
 use range_checker::CheckVerbose;
 
-#[derive(Debug, Default, CheckVerbose)]
+#[derive(Debug, Default, Check)]
 struct TestStruct {
     #[range(..=5)]
     #[range(20..)]
@@ -33,7 +33,7 @@ struct TestStruct {
     #[fallback(9.9)]
     v2: f64,
     #[range(..-1)]
-    #[fallback(|x| x - 5)]
+    #[fallback(|x| {println!("test fallback closure."); x - 5})]
     v3: isize,
 }
 
