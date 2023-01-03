@@ -63,3 +63,32 @@ One field brokes it's range or filter with fallback attribute setted, `fn check_
 `range_checker::Check` will return `Err(())` immediately any field broke it's range or filter.
 
 `range_checker::CheckVerbose` will check all fields and return detail information like `Err(Vec<Error>)` or `Ok(Vec<Error>)` when all of broken fields has a fallback attribute.
+
+---
+
+## Expand Example
+
+Here(https://github.com/TYPEmber/range_checker/tree/master/examples/expand_code.md) is an Expand Example for
+
+```rust
+use range_checker::Check;
+use range_checker::CheckVerbose;
+
+#[derive(Debug, Default, CheckVerbose)]
+struct TestStruct {
+    #[range(..=5)]
+    #[range(20..)]
+    #[filter(|x| x % 2 != 0)]
+    #[fallback(255)]
+    pub v0: u8,
+    #[range(-1.0..=5.0)]
+    #[fallback(3.1)]
+    v1: f32,
+    #[filter(|x| x > 8.0)]
+    #[fallback(9.9)]
+    v2: f64,
+    #[range(..-1)]
+    #[fallback(|x| {println!("test fallback closure."); x - 5})]
+    v3: isize,
+}
+```
