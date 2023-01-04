@@ -1,4 +1,4 @@
-[<img alt="crates.io" src="https://img.shields.io/crates/v/syn.svg?style=for-the-badge&color=fc8d62&logo=rust" height="20">](https://crates.io/crates/range_checker)
+[<img alt="crates.io" src="https://img.shields.io/crates/v/range_checker" height="20">](https://crates.io/crates/range_checker)
 
 
 # range_checker
