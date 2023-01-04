@@ -95,7 +95,6 @@ pub fn derive_range_checker(input: DeriveInput) -> Result<TokenStream> {
                 Ok(())
             }
 
-            #[allow(unreachable_code)]
             fn check_with_fallback(&mut self) -> Result<(), ()> {
                 // dbg!(#(#check_list),*);
                 // dbg!(#(#fallback_list)*);

@@ -16,7 +16,7 @@ fn main() {
 use range_checker::Check;
 use range_checker::CheckVerbose;
 
-#[derive(Debug, Default, CheckVerbose)]
+#[derive(Debug, Default, Check)]
 struct TestStruct {
     #[range(..=5)]
     #[range(20..)]
