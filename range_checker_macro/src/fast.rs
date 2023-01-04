@@ -25,7 +25,8 @@ pub fn derive_range_checker(input: DeriveInput) -> Result<TokenStream> {
 
             let mut check_statement = TokenStream::default();
 
-            if let Some(range_first) = range_attrs.first() {
+            let mut range_attrs = range_attrs.iter();
+            if let Some(range_first) = range_attrs.next() {
                 check_statement = quote! {(#range_first).contains(&self.#ident_item)};
 
                 for range in range_attrs {
@@ -33,12 +34,12 @@ pub fn derive_range_checker(input: DeriveInput) -> Result<TokenStream> {
                 }
             }
 
+            let mut filter_attrs = filter_attrs.iter();
             if check_statement.is_empty() {
-                if let Some(filter_first) = filter_attrs.first() {
+                if let Some(filter_first) = filter_attrs.next() {
                     check_statement = quote! {(#filter_first)(self.#ident_item)};
                 };
             }
-
             for filter in filter_attrs {
                 check_statement.extend(quote! {&& (#filter)(self.#ident_item)})
             }
