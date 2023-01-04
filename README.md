@@ -84,7 +84,7 @@ struct TestStruct {
     #[range(-1.0..=5.0)]
     #[fallback(3.1)]
     v1: f32,
-    #[filter(|x| x > 8.0)]
+    #[filter(|&x| x > 8.0)]
     #[fallback(9.9)]
     v2: f64,
     #[range(..-1)]

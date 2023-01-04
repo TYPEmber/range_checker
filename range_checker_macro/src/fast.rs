@@ -37,11 +37,11 @@ pub fn derive_range_checker(input: DeriveInput) -> Result<TokenStream> {
             let mut filter_attrs = filter_attrs.iter();
             if check_statement.is_empty() {
                 if let Some(filter_first) = filter_attrs.next() {
-                    check_statement = quote! {(#filter_first)(self.#ident_item)};
+                    check_statement = quote! {(#filter_first)(&self.#ident_item)};
                 };
             }
             for filter in filter_attrs {
-                check_statement.extend(quote! {&& (#filter)(self.#ident_item)})
+                check_statement.extend(quote! {&& (#filter)(&self.#ident_item)})
             }
 
             if !check_statement.is_empty() {
@@ -55,7 +55,7 @@ pub fn derive_range_checker(input: DeriveInput) -> Result<TokenStream> {
                     .first()
                     .map(|closure| {
                         Some(quote! {
-                            self.#ident_item = (#closure)(self.#ident_item);
+                            self.#ident_item = (#closure)(&self.#ident_item);
                         })
                     })
                     .unwrap_or(fallback_lit_attrs.first().map(|lit| {
@@ -82,7 +82,7 @@ pub fn derive_range_checker(input: DeriveInput) -> Result<TokenStream> {
     // dbg!(&fallback_list);
 
     Ok(quote!(
-        impl range_checker::Check for #ident {
+        impl ::range_checker::Check for #ident {
             fn check(&self) -> Result<(), ()> {
                 // dbg!(#(#check_list),*);
 

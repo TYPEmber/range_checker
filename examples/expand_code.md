@@ -4,17 +4,17 @@
 ## Check
 
 ```rust
-impl range_checker::Check for TestStruct {
+impl ::range_checker::Check for TestStruct {
     fn check(&self) -> Result<(), ()> {
         if !((..=5).contains(&self.v0)
-            || (20..).contains(&self.v0) && (|x| x % 2 != 0)(self.v0))
+            || (20..).contains(&self.v0) && (|x| x % 2 != 0)(&self.v0))
         {
             return Err(());
         }
         if !((-1.0..=5.0).contains(&self.v1)) {
             return Err(());
         }
-        if !((|x| x > 8.0)(self.v2)) {
+        if !((|&x| x > 8.0)(&self.v2)) {
             return Err(());
         }
         if !((..-1).contains(&self.v3)) {
@@ -24,14 +24,14 @@ impl range_checker::Check for TestStruct {
     }
     fn check_with_fallback(&mut self) -> Result<(), ()> {
         if !((..=5).contains(&self.v0)
-            || (20..).contains(&self.v0) && (|x| x % 2 != 0)(self.v0))
+            || (20..).contains(&self.v0) && (|x| x % 2 != 0)(&self.v0))
         {
             self.v0 = 255;
         }
         if !((-1.0..=5.0).contains(&self.v1)) {
             self.v1 = 3.1;
         }
-        if !((|x| x > 8.0)(self.v2)) {
+        if !((|&x| x > 8.0)(&self.v2)) {
             self.v2 = 9.9;
         }
         if !((..-1).contains(&self.v3)) {
@@ -46,7 +46,7 @@ impl range_checker::Check for TestStruct {
                     );
                 };
                 x - 5
-            })(self.v3);
+            })(&self.v3);
         }
         Ok(())
     }
@@ -76,12 +76,12 @@ impl range_checker::CheckVerbose for TestStruct {
                     check_statement: "(- 1.0 ..= 5.0).contains(& self.v1)".to_owned(),
                 })
         }
-        if !((|x| x > 8.0)(self.v2)) {
+        if !((|&x| x > 8.0)(&self.v2)) {
             err_vec
                 .push(range_checker::Error::CheckFailed {
                     ident: "v2".to_owned(),
                     value: (self.v2).to_string(),
-                    check_statement: "(| x | x > 8.0) (self.v2)".to_owned(),
+                    check_statement: "(| & x | x > 8.0) (& self.v2)".to_owned(),
                 })
         }
         if !((..-1).contains(&self.v3)) {
@@ -122,13 +122,13 @@ impl range_checker::CheckVerbose for TestStruct {
                 });
             self.v1 = fallback;
         }
-        if !((|x| x > 8.0)(self.v2)) {
+        if !((|&x| x > 8.0)(&self.v2)) {
             let fallback = 9.9;
             ret_vec
                 .push(range_checker::Error::Fallback {
                     ident: "v2".to_owned(),
                     value: (self.v2).to_string(),
-                    check_statement: "(| x | x > 8.0) (self.v2)".to_owned(),
+                    check_statement: "(| & x | x > 8.0) (& self.v2)".to_owned(),
                     fallback: fallback.to_string(),
                 });
             self.v2 = fallback;
@@ -144,7 +144,7 @@ impl range_checker::CheckVerbose for TestStruct {
                     );
                 };
                 x - 5
-            })(self.v3);
+            })(&self.v3);
             ret_vec
                 .push(range_checker::Error::Fallback {
                     ident: "v3".to_owned(),

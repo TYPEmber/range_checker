@@ -35,14 +35,14 @@ pub fn derive_range_checker(input: DeriveInput) -> Result<TokenStream> {
             }
             if check_statement.is_empty() {
                 if let Some(filter_first) = filter_attrs.first() {
-                    check_statement = quote! {(#filter_first)(self.#ident_item)};
+                    check_statement = quote! {(#filter_first)(&self.#ident_item)};
                 };
             }
 
             let mut filter_attrs = filter_attrs.iter();
             if check_statement.is_empty() {
                 if let Some(filter_first) = filter_attrs.next() {
-                    check_statement = quote! {(#filter_first)(self.#ident_item)};
+                    check_statement = quote! {(#filter_first)(&self.#ident_item)};
                 };
             }
             if !check_statement.is_empty() {
@@ -50,7 +50,7 @@ pub fn derive_range_checker(input: DeriveInput) -> Result<TokenStream> {
                     .first()
                     .map(|closure| {
                         Some(quote! {
-                            let fallback = (#closure)(self.#ident_item);
+                            let fallback = (#closure)(&self.#ident_item);
                         })
                     })
                     .unwrap_or(fallback_lit_attrs.first().map(|lit| {
