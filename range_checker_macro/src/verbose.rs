@@ -1,11 +1,6 @@
-use std::ops::{Bound, RangeBounds};
-
 use proc_macro2::{Span, TokenStream};
-use quote::{__private::Literal, quote};
-use syn::{
-    parse::Parse, parse_macro_input, Attribute, DeriveInput, Ident, Lit, Meta, MetaNameValue,
-    Result,
-};
+use quote::quote;
+use syn::{DeriveInput, Result};
 
 use super::extract_attributes;
 
@@ -96,13 +91,9 @@ pub fn derive_range_checker(input: DeriveInput) -> Result<TokenStream> {
         ));
     }
 
-    // dbg!(&fallback_list);
-
     Ok(quote!(
         impl range_checker::CheckVerbose for #ident {
             fn check(&self) -> Result<(), Vec<range_checker::Error>> {
-                // dbg!(#(#check_list),*);
-
                 let mut err_vec = vec![];
 
                 #(
@@ -125,19 +116,12 @@ pub fn derive_range_checker(input: DeriveInput) -> Result<TokenStream> {
             }
 
             fn check_with_fallback(&mut self) -> Result<Vec<range_checker::Error>, Vec<range_checker::Error>> {
-                // dbg!(#(#check_list),*);
-                // dbg!(#(#fallback_list)*);
-                // dbg!(#(#ident_list)*);
-
                 let mut ret_vec = vec![];
                 let mut failed = false;
 
                 #(
                     if !(#check_list) {
-                        // dbg!(#fallback_list);
-
-                            #fallback_list
-
+                        #fallback_list
                     }
                 )*
 

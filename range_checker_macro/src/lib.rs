@@ -1,10 +1,5 @@
-use std::ops::{Bound, RangeBounds};
-
 use proc_macro::{Span, TokenStream};
-use quote::{__private::Literal, quote};
-use syn::{
-    parse::Parse, parse_macro_input, Attribute, DeriveInput, Ident, Lit, Meta, MetaNameValue, Result
-};
+use syn::{parse_macro_input, Attribute, Result};
 
 mod fast;
 mod verbose;
