@@ -63,7 +63,7 @@ pub(crate) fn extract_attributes(
                     fallback_closure_attrs.push(closure);
                 }
             }
-            _ => unreachable!(),
+            _ => continue,
         }
     }
 
